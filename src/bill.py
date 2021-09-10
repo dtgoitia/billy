@@ -9,6 +9,7 @@ from src.types import (
     EntrySummary,
     ProjectAlias,
     ProjectDailyStats,
+    TimeRange,
     TogglEntryDescription,
     TogglProjectId,
     TogglTimeEntry,
@@ -17,13 +18,26 @@ from src.types import (
 
 def bill(
     project: ProjectAlias,
-    before: Optional[datetime.datetime] = None,
+    after: Optional[datetime.datetime] = None,
     until: Optional[datetime.datetime] = None,
 ) -> None:
     toggl_project_id = get_toggl_project_id(alias=project)
-    entries = list(toggl.get_project_entries(pid=toggl_project_id))
+
+    if after is None:
+        earliest_date = get_project_earliest_date(project)
+        after = earliest_date
+
+    range = TimeRange(after=after, until=until)
+
+    entries = list(toggl.get_project_entries(pid=toggl_project_id, time_range=range))
     stats = aggregate_entries(entries)
     upload_to_gsheet(stats)
+
+
+def get_project_earliest_date(alias: ProjectAlias) -> datetime.datetime:
+    config = get_config()
+    project = next(project for project in config.projects if project.alias == alias)
+    return project.start_date
 
 
 def get_toggl_project_id(alias: ProjectAlias) -> TogglProjectId:

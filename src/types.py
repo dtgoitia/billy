@@ -16,6 +16,7 @@ DurationInSeconds = int
 class Project:
     id: TogglProjectId
     alias: ProjectAlias
+    start_date: datetime.datetime
 
 
 @dataclass
@@ -46,7 +47,12 @@ class TogglTimeEntry:
 @dataclass
 class TimeRange:
     after: datetime.datetime
-    before: datetime.datetime
+    until: Optional[datetime.datetime] = None
+
+    def __repr__(self) -> str:
+        if not self.until:
+            return f"{self.__class__.__name__}({self.after} - ...)"
+        return f"{self.__class__.__name__}({self.after} - {self.until})"
 
 
 @dataclass

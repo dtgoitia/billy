@@ -1,10 +1,11 @@
+import datetime
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from src.filesystem import abort_if_file_does_not_exist, read_json_with_comments
-from src.types import JsonDict, Project, ProjectAlias, TogglProjectId
+from src.types import JsonDict, Project, TogglProjectId
 
 DOTFILES_DIR = Path("~/.config/billy").expanduser()
 CONFIG_PATH = DOTFILES_DIR / "config.jsonc"
@@ -22,8 +23,8 @@ class AppConfig:
     gsheet_url: str
 
     @property
-    def project_id_to_name_map(self) -> Dict[TogglProjectId, ProjectAlias]:
-        return {project.id: project.alias for project in self.projects}
+    def project_id_to_name_map(self) -> Dict[TogglProjectId, Project]:
+        return {project.id: project for project in self.projects}
 
 
 def abort_if_config_file_does_not_exist(path: Path) -> None:
@@ -40,12 +41,14 @@ def parse_project(raw: JsonDict) -> Project:
     """
     {
       "id": 1234,
-      "alias": "project alias"
+      "alias": "project alias",
+      "start": "2021-01-01"
     }
     """
     project = Project(
         id=raw["id"],
         alias=raw["alias"],
+        start_date=datetime.datetime.fromisoformat(raw["start"]),
     )
     return project
 
