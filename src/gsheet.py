@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from typing import Dict, Iterator, List, Optional, Union
 
 import gspread
@@ -7,7 +8,7 @@ from gspread import Client as GSheetClient
 from gspread.models import Spreadsheet, Worksheet
 
 from src.config import get_config
-from src.types import ProjectDailyStats
+from src.types import ProjectAlias, ProjectDailyStats
 
 _CACHED_GSHEET_CLIENT: Optional[GSheetClient] = None
 
@@ -44,6 +45,20 @@ def get_sheets_name_to_index_map(spreadsheet: Spreadsheet) -> WorksheetIndexToMa
     return {sheet.title: index for index, sheet in enumerate(spreadsheet)}
 
 
+def delete_rows_with_last_date(sheet: Worksheet) -> datetime.date:
+    """Delete rows from the bottom up, and returns deleted date value"""
+    first_column = sheet.col_values(1)  # columns start counting at 1
+    bottom_row_value = first_column[-1]
+    last_date = datetime.date.fromisoformat(bottom_row_value)
+
+    start_index = first_column.index(bottom_row_value) + 1
+    end_index = len(first_column)
+
+    sheet.delete_rows(start_index=start_index, end_index=end_index)
+
+    return last_date
+
+
 def upload_to_gsheet(stats: List[ProjectDailyStats]) -> None:
     client = get_sheet_client()
     config = get_config()
@@ -51,13 +66,35 @@ def upload_to_gsheet(stats: List[ProjectDailyStats]) -> None:
     spreadsheet = client.open_by_url(config.gsheet_url)
     name_to_index = get_sheets_name_to_index_map(spreadsheet)
 
-    for project_stats in stats:
+    sorted_stats = sorted(stats, key=lambda s: s.date)
+
+    checked_projects: Dict[ProjectAlias, datetime.date] = {}
+
+    for project_stats in sorted_stats:
         alias = project_stats.alias
+
+        # Get worksheet
         if alias not in name_to_index:
             # TODO: create sheet automatically
             raise NotImplementedError("create sheet manually for the time being")
         worksheet_index = name_to_index[alias]
+        sheet = spreadsheet.get_worksheet(worksheet_index)
+
+        # Delete all entries from the last recorded day, as it might be partially
+        # uploaded, and reupload that day and any following days
+        if alias not in checked_projects:
+            removed_date = delete_rows_with_last_date(sheet)
+            print(f"Deleted {removed_date} entries for {alias!r}")
+            checked_projects[alias] = removed_date
+        else:
+            removed_date = checked_projects[alias]
+
+        # skip all stats before the last removed date
+        if project_stats.date < removed_date:
+            print(f"Skipping {project_stats.date} for {alias!r}")
+            continue
+
         new_rows = list(stats_to_cells(project_stats))
 
-        sheet = spreadsheet.get_worksheet(worksheet_index)
+        print(f"Appending {project_stats.date} for {alias!r}")
         sheet.append_rows(new_rows)
