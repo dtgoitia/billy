@@ -135,20 +135,3 @@ def get_project_entries(
     for entry in time_entries:
         if entry.project.id == pid:
             yield entry
-
-    # return [
-    #     TogglTimeEntry(
-    #         id=1,
-    #         project=Project(id=174067391, alias="css"),
-    #         start=datetime.datetime.fromisoformat("2013-03-11T11:36:00+00:00"),
-    #         stop=datetime.datetime.fromisoformat("2013-03-11T11:38:00+00:00"),
-    #         description="description 1",
-    #     ),
-    #     TogglTimeEntry(
-    #         id=2,
-    #         project=Project(id=174067391, alias="css"),
-    #         start=datetime.datetime.fromisoformat("2013-03-11T11:38:00+00:00"),
-    #         stop=datetime.datetime.fromisoformat("2013-03-11T11:39:00+00:00"),
-    #         description="description 2",
-    #     ),
-    # ]

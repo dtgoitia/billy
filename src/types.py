@@ -66,3 +66,7 @@ class ProjectDailyStats:
 class EntrySummary:
     description: TogglEntryDescription
     duration: DurationInSeconds
+
+    @property
+    def billable(self) -> bool:
+        return "(no charge)" not in self.description

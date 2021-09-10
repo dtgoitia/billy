@@ -28,10 +28,10 @@ def get_sheet_client() -> GSheetClient:
 
 
 def stats_to_cells(stats: ProjectDailyStats) -> Iterator[GSheetRow]:
-    """Return cells: date, description, seconds"""
+    """Return cells: date, description, seconds, billable"""
     date_str = stats.date.isoformat()
     for entry in stats.entries:
-        row: GSheetRow = [date_str, entry.description, entry.duration]
+        row: GSheetRow = [date_str, entry.description, entry.duration, entry.billable]
         yield row
 
 
