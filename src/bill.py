@@ -21,8 +21,6 @@ def bill(
     until: Optional[datetime.datetime] = None,
 ) -> None:
     toggl_project_id = get_toggl_project_id(alias=project)
-    print(f"toggl_project_id={toggl_project_id}")
-
     entries = list(toggl.get_project_entries(pid=toggl_project_id))
     stats = aggregate_entries(entries)
     upload_to_gsheet(stats)
