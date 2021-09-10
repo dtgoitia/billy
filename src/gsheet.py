@@ -49,7 +49,12 @@ def delete_rows_with_last_date(sheet: Worksheet) -> datetime.date:
     """Delete rows from the bottom up, and returns deleted date value"""
     first_column = sheet.col_values(1)  # columns start counting at 1
     bottom_row_value = first_column[-1]
-    last_date = datetime.date.fromisoformat(bottom_row_value)
+    try:
+        last_date = datetime.date.fromisoformat(bottom_row_value)
+    except ValueError:
+        # no date found in bottom_row_value, hence return early not to delete anything
+        # and return the earliest day possible so that no entries are skipped
+        return datetime.date.min
 
     start_index = first_column.index(bottom_row_value) + 1
     end_index = len(first_column)
