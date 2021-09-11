@@ -11,6 +11,7 @@ from src.config import get_config
 from src.types import ProjectAlias, ProjectDailyStats
 
 _CACHED_GSHEET_CLIENT: Optional[GSheetClient] = None
+MIN_DATE = datetime.date.min
 
 GSheetCell = Union[str, bool, int]
 GSheetRow = List[GSheetCell]
@@ -64,7 +65,7 @@ def delete_rows_with_last_date(sheet: Worksheet) -> datetime.date:
     return last_date
 
 
-def upload_to_gsheet(stats: List[ProjectDailyStats]) -> None:
+def upload_to_gsheet(stats: List[ProjectDailyStats], append_only: bool) -> None:
     client = get_sheet_client()
     config = get_config()
 
@@ -87,7 +88,12 @@ def upload_to_gsheet(stats: List[ProjectDailyStats]) -> None:
 
         # Delete all entries from the last recorded day, as it might be partially
         # uploaded, and reupload that day and any following days
-        if alias not in checked_projects:
+        must_delete_rows_with_last_date = (
+            alias not in checked_projects and append_only is False
+        )
+        if append_only is True and alias not in checked_projects:
+            checked_projects[alias] = MIN_DATE
+        if must_delete_rows_with_last_date:
             removed_date = delete_rows_with_last_date(sheet)
             print(f"Deleted {removed_date} entries for {alias!r}")
             checked_projects[alias] = removed_date

@@ -18,6 +18,7 @@ from src.types import (
 
 def bill(
     project: ProjectAlias,
+    append_only: bool,
     after: Optional[datetime.datetime] = None,
     until: Optional[datetime.datetime] = None,
 ) -> None:
@@ -33,7 +34,7 @@ def bill(
     print(f"Entries fetched: {len(entries)}")
     stats = aggregate_entries(entries)
     print(f"Stats: {len(stats)}")
-    upload_to_gsheet(stats)
+    upload_to_gsheet(stats, append_only=append_only)
 
 
 def get_project_earliest_date(alias: ProjectAlias) -> datetime.datetime:

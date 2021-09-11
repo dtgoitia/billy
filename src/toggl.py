@@ -156,7 +156,7 @@ TableRow = List[Union[str, int]]
 
 def find_cached_entries(
     tr: Optional[TimeRange],
-) -> Tuple[TimeRange, List[TogglTimeEntry]]:
+) -> Tuple[Optional[TimeRange], List[TogglTimeEntry]]:
     """Most common use case: find all entries from a given time on."""
     cached_entries = list(read_cache(tr))
     if not cached_entries:
