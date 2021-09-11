@@ -13,8 +13,13 @@ from src.bill import bill
     is_flag=True,
     help="Appends every time entry to the end of the existing table in GSheet",
 )
-def bill_cmd(project: str, append_only: bool) -> None:
-    bill(project=project, append_only=append_only)
+@click.option(
+    "--fetch-only",
+    is_flag=True,
+    help="Only fetch entries from Toggl, nothing else",
+)
+def bill_cmd(project: str, append_only: bool, fetch_only: bool) -> None:
+    bill(project=project, append_only=append_only, fetch_only=fetch_only)
 
 
 if __name__ == "__main__":
