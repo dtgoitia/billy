@@ -45,10 +45,11 @@ def parse_project(raw: JsonDict) -> Project:
       "start": "2021-01-01"
     }
     """
+    isoformat = f'{raw["start"]}T00:00:00+00:00'  # make it tz aware
     project = Project(
         id=raw["id"],
         alias=raw["alias"],
-        start_date=datetime.datetime.fromisoformat(raw["start"]),
+        start_date=datetime.datetime.fromisoformat(isoformat),
     )
     return project
 

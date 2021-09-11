@@ -30,7 +30,9 @@ def bill(
     range = TimeRange(after=after, until=until)
 
     entries = list(toggl.get_project_entries(pid=toggl_project_id, time_range=range))
+    print(f"Entries fetched: {len(entries)}")
     stats = aggregate_entries(entries)
+    print(f"Stats: {len(stats)}")
     upload_to_gsheet(stats)
 
 

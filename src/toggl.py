@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import enum
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Union, cast
+from typing import Dict, Iterator, List, Optional, Tuple, Union, cast
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -27,17 +27,43 @@ class Toggl:  # TODO: rename to TogglClient
     def __init__(self, token: TogglApiToken) -> None:
         self._token = token
 
-    def _get(self, endpoint: str) -> List[JsonDict]:
-        result = requests.get(endpoint, auth=HTTPBasicAuth(self._token, "api_token"))
+    def _get(self, endpoint: str, params: Dict) -> List[JsonDict]:
+        result = requests.get(
+            endpoint,
+            auth=HTTPBasicAuth(self._token, "api_token"),
+            params=params,
+        )
         result.raise_for_status()
         return result.json()
 
     def get_entries(self, tr: Optional[TimeRange] = None) -> Iterator[TogglTimeEntry]:
-        data = self._get("https://api.track.toggl.com/api/v8/time_entries")
+        # https://github.com/toggl/toggl_api_docs/blob/master/chapters/time_entries.md
+        updated_tr, cached_entries = find_cached_entries(tr)
+        for i, cached_entry in enumerate(cached_entries):
+            yield cached_entry
+
+        print(f"{i} entries from cached...")
+
+        if updated_tr is None:
+            # Case when the cache has been deleted, only query from the earliest project
+            # date in the config, nothing more
+            config = get_config()
+            earliest_date = sorted(proj.start_date for proj in config.projects)[0]
+            updated_tr = TimeRange(after=earliest_date)
+
+        params = {"start_date": updated_tr.after.isoformat()}
+        if updated_tr.until:
+            params["end_date"] = updated_tr.until.isoformat()
+
+        data = self._get("https://api.track.toggl.com/api/v8/time_entries", params)
         project_map = get_config().project_id_to_name_map
+        entries_to_cache = []
         for raw_time_entry in data:
             entry = _parse_toggl_entry(raw_time_entry, project_map)
+            entries_to_cache.append(entry)
             yield entry
+
+        cache_entries(entries_to_cache)
 
 
 def get_toggl_client(token: TogglApiToken) -> Toggl:
@@ -108,7 +134,7 @@ def get_project_entries(
     # TODO: cache them locally to avoid calling too much
     config = get_config()
     toggl = get_toggl_client(token=config.toggl_api_token)
-    time_entries = toggl.get_entries()
+    time_entries = toggl.get_entries(tr=time_range)
     for entry in time_entries:
         if entry.project.id == pid:
             yield entry
@@ -128,10 +154,18 @@ CacheKey = str
 TableRow = List[Union[str, int]]
 
 
-def build_key(entry: TogglTimeEntry) -> CacheKey:
-    # return f"{entry.description}{CACHE_KEY_DELIMITER}{ts}"
-    ts = entry.start.isoformat()
-    return ts
+def find_cached_entries(
+    tr: Optional[TimeRange],
+) -> Tuple[TimeRange, List[TogglTimeEntry]]:
+    """Most common use case: find all entries from a given time on."""
+    cached_entries = list(read_cache(tr))
+    if not cached_entries:
+        return tr, []
+
+    last_datetime = cached_entries[-1].start  # TODO: should this be start or stop?
+    last_datetime += datetime.timedelta(seconds=1)
+    updated_tr = TimeRange(after=last_datetime, until=tr.until if tr else None)
+    return updated_tr, cached_entries
 
 
 def entry_to_table_row(entry: TogglTimeEntry) -> TableRow:
@@ -148,9 +182,9 @@ def entry_to_table_row(entry: TogglTimeEntry) -> TableRow:
 
 def table_row_to_entry(row: TableRow) -> TogglTimeEntry:
     return TogglTimeEntry(
-        id=cast(int, row[0]),
+        id=int(row[0]),
         project=Project(
-            id=cast(int, row[1]),
+            id=int(row[1]),
             alias=cast(str, row[2]),
             start_date=datetime.datetime.fromisoformat(cast(str, row[3])),
         ),
@@ -185,6 +219,9 @@ def read_cache(time_range: Optional[TimeRange] = None) -> Iterator[TogglTimeEntr
 
 def load_cache() -> Iterator[TogglTimeEntry]:
     # Assumption: all entries are sorted by start date
+    if TOGGL_ENTRIES_CACHE.exists() is False:
+        return
+
     with TOGGL_ENTRIES_CACHE.open("r") as f:
         for row in csv.reader(f):
             entry = table_row_to_entry(row)  # type: ignore
@@ -196,6 +233,9 @@ def cache_entries(entries: List[TogglTimeEntry]) -> None:
     with TOGGL_ENTRIES_CACHE.open("a") as f:
         writer = csv.writer(f)
         for entry in entries:
+            if entry.stop is None:
+                # Ongoing time entry, just ignore it
+                continue
             row = entry_to_table_row(entry)
             writer.writerow(row)
 
