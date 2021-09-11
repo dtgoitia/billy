@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 JsonDict = Dict[str, Any]
 TogglEntryId = int
 TogglProjectId = int
-ProjectAlias = Optional[str]
+ProjectAlias = str
 TogglEntryDescription = str
 DurationInSeconds = int
 

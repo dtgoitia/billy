@@ -18,7 +18,10 @@ class Endpoint(enum.Enum):
     TIME_ENTRIES = "https://api.track.toggl.com/api/v8/time_entries"
 
 
-# from toggl.TogglPy import Toggl
+class ProjectNotSupported(Exception):
+    # This mainly will happen when you try to parse an Toggl entry which belongs to a
+    # project that is not specified in the config
+    ...
 
 
 class Toggl:  # TODO: rename to TogglClient
@@ -39,10 +42,11 @@ class Toggl:  # TODO: rename to TogglClient
     def get_entries(self, tr: Optional[TimeRange] = None) -> Iterator[TogglTimeEntry]:
         # https://github.com/toggl/toggl_api_docs/blob/master/chapters/time_entries.md
         updated_tr, cached_entries = find_cached_entries(tr)
+        i = 0
         for i, cached_entry in enumerate(cached_entries):
             yield cached_entry
 
-        print(f"{i} entries from cached...")
+        print(f"{i} entries from cache...")
 
         if updated_tr is None:
             # Case when the cache has been deleted, only query from the earliest project
@@ -59,7 +63,16 @@ class Toggl:  # TODO: rename to TogglClient
         project_map = get_config().project_id_to_name_map
         entries_to_cache = []
         for raw_time_entry in data:
-            entry = _parse_toggl_entry(raw_time_entry, project_map)
+            try:
+                entry = _parse_toggl_entry(raw_time_entry, project_map)
+            except ProjectNotSupported:
+                # Toggl returns entries for all projects. It doesn't allow filtering per
+                # project. However, that doesn't mean you need to cache entries from
+                # projects you don't care about.
+                # pro: you save space in caching and reduce load/write time
+                # con: when adding a new project, you need to remove cache and fetch all
+                #      entries again - which is fine because it occurs very rarely
+                continue
             entries_to_cache.append(entry)
             yield entry
 
@@ -105,8 +118,7 @@ def _parse_toggl_entry(
     if project_id in project_map:
         project = project_map[project_id]
     else:
-        min_date = datetime.datetime.min
-        project = Project(id=raw_entry["pid"], alias="", start_date=min_date)
+        raise ProjectNotSupported
 
     entry = TogglTimeEntry(
         id=raw_entry["id"],
@@ -172,7 +184,7 @@ def entry_to_table_row(entry: TogglTimeEntry) -> TableRow:
     return [
         entry.id,
         entry.project.id,
-        entry.project.alias or "NO_ALIAS",
+        entry.project.alias,
         entry.project.start_date.isoformat(),
         entry.description,
         entry.start.isoformat(),
@@ -238,6 +250,3 @@ def cache_entries(entries: List[TogglTimeEntry]) -> None:
                 continue
             row = entry_to_table_row(entry)
             writer.writerow(row)
-
-
-# Test that they are appended
