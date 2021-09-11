@@ -18,11 +18,17 @@ from src.types import (
 
 def bill(
     project: ProjectAlias,
-    append_only: bool,
+    clean_cache: bool,
     fetch_only: bool,
+    append_only: bool,
     after: Optional[datetime.datetime] = None,
     until: Optional[datetime.datetime] = None,
 ) -> None:
+    if clean_cache is True:
+        print("Deleting cache file...", end="")
+        toggl.remove_cache()
+        print(" done!")
+
     toggl_project_id = get_toggl_project_id(alias=project)
 
     if after is None:

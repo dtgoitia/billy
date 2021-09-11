@@ -9,17 +9,32 @@ from src.bill import bill
 @click.command(name="bill")
 @click.argument("project", nargs=1)
 @click.option(
-    "--append-only",
+    "--clean-cache",
     is_flag=True,
-    help="Appends every time entry to the end of the existing table in GSheet",
+    help="Delete the cache file before doing anything else",
 )
 @click.option(
     "--fetch-only",
     is_flag=True,
     help="Only fetch entries from Toggl, nothing else",
 )
-def bill_cmd(project: str, append_only: bool, fetch_only: bool) -> None:
-    bill(project=project, append_only=append_only, fetch_only=fetch_only)
+@click.option(
+    "--append-only",
+    is_flag=True,
+    help="Appends every time entry to the end of the existing table in GSheet",
+)
+def bill_cmd(
+    project: str,
+    clean_cache: bool,
+    fetch_only: bool,
+    append_only: bool,
+) -> None:
+    bill(
+        project=project,
+        clean_cache=clean_cache,
+        fetch_only=fetch_only,
+        append_only=append_only,
+    )
 
 
 if __name__ == "__main__":

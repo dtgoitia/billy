@@ -250,3 +250,10 @@ def cache_entries(entries: List[TogglTimeEntry]) -> None:
                 continue
             row = entry_to_table_row(entry)
             writer.writerow(row)
+
+
+def remove_cache() -> None:
+    if not TOGGL_ENTRIES_CACHE.exists():
+        return
+
+    TOGGL_ENTRIES_CACHE.unlink()
