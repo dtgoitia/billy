@@ -22,7 +22,19 @@ def get_sheet_client() -> GSheetClient:
     if _CACHED_GSHEET_CLIENT:
         return _CACHED_GSHEET_CLIENT
 
-    client = gspread.oauth()
+    config = get_config()
+    client = gspread.oauth(
+        credentials_filename=config.gspread_credentials_path,
+        authorized_user_filename=config.gspread_authorized_user_path,
+    )
+    if client.auth.expired:
+        print("Deleting expired Google Spreadsheet credentials...")
+        config.gspread_authorized_user_path.unlink()
+
+        client = gspread.oauth(
+            credentials_filename=config.gspread_credentials_path,
+            authorized_user_filename=config.gspread_authorized_user_path,
+        )
 
     _CACHED_GSHEET_CLIENT = client
 

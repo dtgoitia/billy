@@ -9,7 +9,9 @@ from src.types import JsonDict, Project, TogglProjectId
 
 DOTFILES_DIR = Path("~/.config/billy").expanduser()
 CONFIG_PATH = DOTFILES_DIR / "config.jsonc"
-CREDENTIALS_PATH = DOTFILES_DIR / "credentials.jsonc"
+SECRETS_PATH = DOTFILES_DIR / "secrets.jsonc"
+GSPREAD_CREDENTIALS = Path("~/.config/gspread/credentials.json").expanduser()
+GSPREAD_AUTHORIZED_USER = Path("~/.config/gspread/authorized_user.json").expanduser()
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,8 @@ class AppConfig:
     projects: List[Project]
     toggl_api_token: TogglApiToken
     gsheet_url: str
+    gspread_credentials_path: Path
+    gspread_authorized_user_path: Path
 
     @property
     def project_id_to_name_map(self) -> Dict[TogglProjectId, Project]:
@@ -66,6 +70,8 @@ def parse_config(config_path: Path, credentials_path: Path) -> AppConfig:
         projects=projects,
         toggl_api_token=api_token,
         gsheet_url=gsheet_url,
+        gspread_credentials_path=GSPREAD_CREDENTIALS,
+        gspread_authorized_user_path=GSPREAD_AUTHORIZED_USER,
     )
     return config
 
@@ -79,9 +85,9 @@ def get_config() -> AppConfig:
         return _CACHED_APP_CONFIG
 
     abort_if_config_file_does_not_exist(path=CONFIG_PATH)
-    abort_if_credentials_file_does_not_exist(path=CREDENTIALS_PATH)
+    abort_if_credentials_file_does_not_exist(path=SECRETS_PATH)
 
-    config = parse_config(config_path=CONFIG_PATH, credentials_path=CREDENTIALS_PATH)
+    config = parse_config(config_path=CONFIG_PATH, credentials_path=SECRETS_PATH)
 
     _CACHED_APP_CONFIG = config
 

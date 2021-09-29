@@ -29,7 +29,7 @@
 
 * Credentials (mandatory):
 
-  At `~/.config/billy/credentials.jsonc`:
+  At `~/.config/billy/secrets.jsonc`:
 
   ```jsonc
   {
