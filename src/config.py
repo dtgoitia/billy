@@ -10,8 +10,8 @@ from src.types import JsonDict, Project, TogglProjectId
 DOTFILES_DIR = Path("~/.config/billy").expanduser()
 CONFIG_PATH = DOTFILES_DIR / "config.jsonc"
 SECRETS_PATH = DOTFILES_DIR / "secrets.jsonc"
-GSPREAD_CREDENTIALS = Path("~/.config/gspread/credentials.json").expanduser()
-GSPREAD_AUTHORIZED_USER = Path("~/.config/gspread/authorized_user.json").expanduser()
+GSPREAD_CREDENTIALS = DOTFILES_DIR / "gspread_credentials.json"
+GSPREAD_AUTHORIZED_USER = DOTFILES_DIR / "gspread_authorized_user.json"
 
 logger = logging.getLogger(__name__)
 

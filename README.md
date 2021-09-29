@@ -39,7 +39,7 @@
   }
   ```
 
-  Follow [this instructions][1] to obtain Google Spreadsheet credentials and enable required GCP APIs.
+  Follow [this instructions][1] to obtain Google Spreadsheet credentials and enable required GCP APIs. Copy the obtained client secret JSON file at `~/.config/billy/gspread_credentials.json`.
 
 <!-- External references -->
 
